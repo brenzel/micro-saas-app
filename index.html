@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+</head>
+<body>
+    <div id="app">
+        <v-app>
+          <v-main>
+            <v-theme-provider root :dark="isDark">
+
+              <v-container v-if="!loggedIn">
+                <v-row justify="center" class="ma-5">
+                  <v-col xs="12" sm="8">
+                  <v-card>
+                    <v-card-text class="card-accent-2">
+                      <v-row>
+                        <v-col>
+                          <h2>
+                            Login
+                          </h2>
+                        </v-col>
+                      </v-row>
+                    </v-card-text>
+            
+                    <v-card-text>
+                      <v-row>
+                        <v-col>
+                          <v-text-field autofocus label="E-Mail" type="text" v-model="username" outlined />
+                        </v-col>
+                      </v-row>
+            
+                      <v-row>
+                        <v-col>
+                          <v-text-field label="Passwort" type="password" v-model="password" outlined />
+                        </v-col>
+                      </v-row>
+            
+                      <v-row>
+                        <v-col>
+                          <v-btn  block v-on:click="login()" color="success">
+                            Anmelden
+                          </v-btn>
+                        </v-col>
+                      </v-row>
+            
+                      <v-row>
+                        <v-col>
+                          <v-btn block  color="error" >
+                            Passwort vergessen
+                          </v-btn>
+                        </v-col>
+                      </v-row>
+                    </v-card-text>
+                  </v-card>
+                </v-col>
+                </v-row>
+              </v-container>
+
+
+              <v-container v-if="loggedIn">
+                <v-row justify="center" class="ma-5">
+                  <v-col xs="12" sm="8">
+                    <v-card>
+                      <v-toolbar color="blue darken-4" dark>
+                        
+                        <v-toolbar-title class="headline">Todo App</v-toolbar-title>
+      
+                        <v-spacer></v-spacer>
+   
+                            <v-btn icon @click="isDark = !isDark">
+                              <v-icon v-model="isDark">{{ !isDark ? 'mdi-weather-night' : 'mdi-weather-cloudy' }}</v-icon>
+                            </v-btn>
+  
+                      </v-toolbar>
+      
+                      <v-list two-line subheader>
+                        <v-subheader class="headline"></v-subheader>
+                        <p class="mx-12 text-right"><b>{{todos.length}}</b> Tasks</p>
+      
+                        <v-list-item>
+                          <v-list-item-content>
+                            <v-list-item-title>
+      
+                              <v-text-field v-model="newTodo" id="newTodo" name="newTodo" label="Type your task" @keyup.enter="addTodo" />
+                            </v-list-item-title>
+                          </v-list-item-content>
+                        </v-list-item>
+      
+                      </v-list>
+      
+                      <v-list subheader two-line flat>
+                        <v-subheader class="subheading" v-if="todos.length == 0">You have 0 Tasks, add some</v-subheader>
+                        <v-subheader class="subheading" v-else="todos.length == 1">Your Tasks</v-subheader>
+      
+                        <v-list-item-group>
+                          <v-list-item v-for="(todo, i) in todos">
+                            
+                              <v-list-item-action>
+                                <v-checkbox value="true" v-model="todo.fields.done" @click="toggle(todo)"></v-checkbox>
+                              </v-list-item-action>
+      
+                              <v-list-item-content :class="{done : (todo.fields.done === 'true')}">
+                                <v-list-item-title>{{ todo.fields.title }}</v-list-item-title>
+                                <v-list-item-subtitle>Added on: {{ todo.createdTime }}</v-list-item-subtitle>
+                              </v-list-item-content>
+                              <v-btn fab ripple small color="red" v-if="todo.fields.done === 'true'" @click="removeTodo(todo)">
+                                <v-icon class="white--text">mdi-close</v-icon>
+                              </v-btn>
+                            
+                          </v-list-item>
+                        </v-list-item-group>
+                      </v-list>
+                    </v-card>
+                  </v-col>
+                </v-row>
+              </v-container>
+            </v-theme-provider>
+          </v-main>
+        </v-app>
+      </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.0/axios.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+  <script>
+    new Vue({
+  el: '#app',
+  vuetify: new Vuetify(),
+  data () {
+    return {
+      isDark:false,
+      newTodo: '',
+      todos: [],
+      username: '',
+      password: '',
+      auth: '',
+      userid: '',
+      loggedIn: false
+    }
+  },
+  mounted(){
+        
+    },
+  methods: {
+    login(){
+
+      if (this.username.length === 0) {
+        alert("Mail-Adresse fehlt!");
+        return;
+      }
+
+      if (this.password.length === 0) {
+        alert("Passwort fehlt!");
+        return;
+      }
+
+      this.username = this.username.trim();
+      this.username = this.username.toLowerCase();
+
+      const mailformat = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
+      if (!this.username.match(mailformat)) {
+        alert("Mail-Adresse ungültig!");
+        return;
+      }
+
+      const tryout = btoa(this.username + ":" + this.password);
+
+      axios
+        .get("https://micro-saas-api.vercel.app/user/" + this.username, {
+            headers: {
+                Authorization: "Basic " + tryout,
+            },
+        })
+        .then((response) => {
+            this.userid = response.data.records[0].id;
+            this.auth = tryout;
+            this.loggedIn = true;
+
+            this.getTodos();
+        })
+        .catch((error) => {
+            console.log(error);
+        });
+    },
+    getTodos(){
+        axios
+        .get("https://micro-saas-api.vercel.app/notes/" + this.userid, {
+            headers: {
+                Authorization: "Basic " + this.auth,
+            },
+        })
+        .then((response) => {
+            this.todos = response.data;
+        })
+        .catch((error) => {
+            console.log(error);
+        });
+
+    },
+    toggle(note){
+
+        axios
+        .put("https://micro-saas-api.vercel.app/note/" + note.id, 
+        note,
+        {
+            headers: {
+                Authorization: "Basic " + this.auth,
+            },
+        })
+        .then((response) => {
+            this.getTodos();
+        })
+        .catch((error) => {
+            console.log(error);
+        });
+
+    },
+    addTodo() {
+      var value = this.newTodo && this.newTodo.trim();
+      if (!value) {
+        return;
+      }
+      this.newTodo = "";
+
+      let note = {};
+      note.fields = {};
+      note.fields.title = value;
+      note.fields.userid = this.userid;
+      note.fields.done = "false";
+
+      axios
+        .post("https://micro-saas-api.vercel.app/note", 
+        note,
+        {
+            headers: {
+                Authorization: "Basic " + this.auth,
+            },
+        })
+        .then((response) => {
+            this.getTodos();
+        })
+        .catch((error) => {
+            console.log(error);
+        });
+      
+      
+    },
+    removeTodo(note) {
+        axios
+        .delete("https://micro-saas-api.vercel.app/note/" + note.id,
+        {
+            headers: {
+                Authorization: "Basic " + this.auth,
+            },
+        })
+        .then((response) => {
+            this.getTodos();
+        })
+        .catch((error) => {
+            console.log(error);
+        });
+    }
+  }
+});
+  </script>
+  <style>
+      .done {
+        text-decoration: line-through;
+        }
+  </style>
+</body>
+</html>
